@@ -1,0 +1,109 @@
+<launch>
+    <!-- ========================================
+         测试节点1 - Gazebo仿真环境
+         功能：起飞3m -> 悬停30s -> 降落
+         ======================================== -->
+    
+    <!-- 测试参数 -->
+    <arg name="target_height" default="3.0"/>    <!-- 目标高度(米) -->
+    <arg name="hover_duration" default="30.0"/>  <!-- 悬停时间(秒) -->
+    
+    <!-- ========================================
+         Part 1: 启动Gazebo仿真环境
+         ======================================== -->
+    
+    <!-- 仿真世界参数 -->
+    <arg name="world" default="$(find ship_painter)/worlds/ship.world"/>
+    <arg name="gui" default="true"/>
+    <arg name="debug" default="false"/>
+    <arg name="verbose" default="false"/>
+    <arg name="paused" default="false"/>
+  
+    <!-- 无人机参数 -->
+    <arg name="vehicle" default="iris_0"/>
+    <arg name="ID" default="0"/>
+    <arg name="fcu_url" default="udp://:24540@localhost:34580"/>  <!-- 修改为正确端口 -->
+    
+    <!-- 无人机初始位置 -->
+    <arg name="x" default="0"/>
+    <arg name="y" default="0"/>
+    <arg name="z" default="0.1"/>
+    <arg name="R" default="0"/>
+    <arg name="P" default="0"/>
+    <arg name="Y" default="0"/>
+    
+    <!-- 设置环境变量 -->
+    <env name="PX4_SIM_MODEL" value="iris"/>
+    <env name="GAZEBO_MODEL_PATH" value="$(find ship_painter)/models:$(find mavlink_sitl_gazebo)/models:$(optenv GAZEBO_MODEL_PATH)"/>
+    <env name="GAZEBO_PLUGIN_PATH" value="$(find mavlink_sitl_gazebo)/build:$(optenv GAZEBO_PLUGIN_PATH)"/>
+    
+    <!-- 启动Gazebo -->
+    <include file="$(find gazebo_ros)/launch/empty_world.launch">
+        <arg name="world_name" value="$(arg world)"/>
+        <arg name="gui" value="$(arg gui)"/>
+        <arg name="debug" value="$(arg debug)"/>
+        <arg name="verbose" value="$(arg verbose)"/>
+        <arg name="paused" value="$(arg paused)"/>
+    </include>
+      
+    <!-- 启动PX4 SITL -->
+    <node name="sitl_$(arg ID)" pkg="px4" type="px4" output="screen" 
+          args="$(find px4)/ROMFS/px4fmu_common -s etc/init.d-posix/rcS -i $(arg ID) -w sitl_iris_$(arg ID)">
+    </node>
+    
+    <!-- 启动MAVROS - 延迟启动等待PX4就绪 -->
+    <node pkg="mavros" type="mavros_node" name="mavros" required="false" clear_params="true" output="screen"
+          launch-prefix="bash -c 'sleep 5; $0 $@'">
+        <param name="fcu_url" value="$(arg fcu_url)"/>
+        <param name="gcs_url" value=""/>
+        <param name="target_system_id" value="1"/>
+        <param name="target_component_id" value="1"/>
+        <param name="fcu_protocol" value="v2.0"/>
+        
+        <!-- 加载插件列表 -->
+        <rosparam command="load" file="$(find mavros)/launch/px4_pluginlists.yaml"/>
+        <rosparam command="load" file="$(find mavros)/launch/px4_config.yaml"/>
+    </node>
+    
+    <!-- 无人机模型加载 -->  
+    <node name="$(arg vehicle)_spawn" pkg="gazebo_ros" type="spawn_model" output="screen"
+          args="-sdf -file $(find mavlink_sitl_gazebo)/models/iris/iris.sdf 
+                -model $(arg vehicle) 
+                -x $(arg x) 
+                -y $(arg y) 
+                -z $(arg z) 
+                -R $(arg R) 
+                -P $(arg P) 
+                -Y $(arg Y)">
+    </node>
+    
+    <!-- ========================================
+         Part 2: 启动测试节点
+         ======================================== -->
+    
+    <!-- 延迟启动测试节点，等待仿真环境就绪 -->
+    <node name="test_node1" pkg="real_test" type="test_node1" output="screen"
+          launch-prefix="bash -c 'sleep 10; $0 $@'">
+        <param name="target_height" value="$(arg target_height)"/>
+        <param name="hover_duration" value="$(arg hover_duration)"/>
+        <param name="position_tolerance" value="0.2"/>
+    </node>
+    
+    <!-- ========================================
+         Part 3: 可选的可视化工具
+         ======================================== -->
+    
+    <!-- RViz可视化 (可选，需要时取消注释) -->
+    <!-- 
+    <node name="rviz" pkg="rviz" type="rviz" 
+          args="-d $(find real_test)/rviz/test_view.rviz"
+          launch-prefix="bash -c 'sleep 5; $0 $@'"/>
+    -->
+    
+    <!-- RQT控制台 (可选) -->
+    <!--
+    <node name="rqt_console" pkg="rqt_console" type="rqt_console"
+          launch-prefix="bash -c 'sleep 3; $0 $@'"/>
+    -->
+    
+</launch>

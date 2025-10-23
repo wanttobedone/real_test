@@ -1,0 +1,42 @@
+<launch>
+    <!-- 真机测试 - 通过WiFi连接Pixhawk
+         ESP8266配置：IP 192.168.4.1, Port 14550 -->
+    
+    <!-- 测试参数 - 首次测试使用保守值 -->
+    <arg name="target_height" default="1.5"/>    <!-- 首次测试：1.5米 -->
+    <arg name="hover_duration" default="5.0"/>   <!-- 首次测试：5秒 -->
+    
+    <!-- WiFi连接参数 -->
+    <arg name="fcu_url" default="udp://:14550@192.168.4.1:14550"/>
+    
+    <!-- ========================================
+         启动MAVROS
+         ======================================== -->
+    <include file="$(find mavros)/launch/px4.launch">
+        <arg name="fcu_url" value="$(arg fcu_url)"/>
+        <arg name="gcs_url" value=""/>
+        <arg name="tgt_system" value="1"/>
+        <arg name="tgt_component" value="1"/>
+    </include>
+    
+    <!-- ========================================
+         安全检查节点（监控状态）
+         ======================================== -->
+    <!-- <node name="safety_monitor" pkg="rostopic" type="rostopic" 
+          args="echo /mavros/state -c"
+          output="screen"/> -->
+    
+    <!-- ========================================
+         启动测试节点（大幅延迟，留出检查时间）
+         ======================================== -->
+    <node name="test_node1" pkg="real_test" type="test_node1" output="screen"
+          launch-prefix="bash -c 'echo; echo ========== SAFETY CHECK ==========; echo Please verify:; echo 1. Remote control is ON and in MANUAL mode; echo 2. You can switch to manual mode immediately; echo 3. Test area is clear 10m radius; echo 4. Battery is fully charged; echo 5. GPS has 8+ satellites; echo; echo Waiting 15 seconds before starting...; echo Press Ctrl+C to abort!; echo =====================================; echo; sleep 15; $0 $@'">
+        <param name="target_height" value="$(arg target_height)"/>
+        <param name="hover_duration" value="$(arg hover_duration)"/>
+        <param name="position_tolerance" value="0.01"/>  <!-- 真机容差放宽 -->
+        
+        <!-- MAVROS命名空间（如果不在命名空间内就用/mavros） -->
+        <param name="mavros_ns" value="/mavros"/>
+    </node>
+    
+</launch>

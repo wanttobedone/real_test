@@ -1,0 +1,28 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "${default}",
+        "limitSymbolsToIncludedHeaders": false
+      },
+      "includePath": [
+        "/home/demo/catkin_ws/devel/include/**",
+        "/opt/ros/noetic/include/**",
+        "/home/demo/catkin_ws/src/catvehicle/include/**",
+        "/home/demo/catkin_ws/src/gazebo_ros_pkgs/gazebo_plugins/include/**",
+        "/home/demo/catkin_ws/src/gazebo_ros_pkgs/gazebo_ros/include/**",
+        "/home/demo/catkin_ws/src/gazebo_ros_pkgs/gazebo_ros_control/include/**",
+        "/home/demo/catkin_ws/src/gazebo_ros_actor_plugin/gazebo_ros_actor_cmd_plugin/include/**",
+        "/home/demo/catkin_ws/src/ship_painter/include/**",
+        "/home/demo/catkin_ws/src/sicktoolbox/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS",
+      "intelliSenseMode": "gcc-x64",
+      "compilerPath": "/usr/bin/gcc",
+      "cStandard": "gnu11",
+      "cppStandard": "c++14"
+    }
+  ],
+  "version": 4
+}
