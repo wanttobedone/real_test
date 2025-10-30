@@ -3,8 +3,6 @@
          ESP8266配置：IP 192.168.4.1, Port 14550 -->
     
     <!-- 测试参数 - 首次测试使用保守值 -->
-    <arg name="target_height" default="5"/>    <!-- 首次测试：1.5米 -->
-    <arg name="hover_duration" default="7.0"/>   <!-- 首次测试：5秒 -->
     
     <!-- WiFi连接参数 -->
     <arg name="fcu_url" default="udp://:14550@192.168.4.1:14550"/>
@@ -29,14 +27,20 @@
     <!-- ========================================
          启动测试节点（大幅延迟，留出检查时间）
          ======================================== -->
-    <node name="test_node1" pkg="real_test" type="test_node1" output="screen"
-          launch-prefix="bash -c 'sleep 10; $0 $@'">
-        <param name="target_height" value="$(arg target_height)"/>
-        <param name="hover_duration" value="$(arg hover_duration)"/>
-        <param name="position_tolerance" value="0.3"/>  <!-- 真机容差放宽 -->
+
+
+    <node name="circle" pkg="real_test" type="circle_node" output="screen"
+        launch-prefix="bash -c 'sleep 5; $0 $@'">
+        <!-- 飞行参数 -->
+        <param name="takeoff_height" value="1.5"/>        <!-- 起飞高度：5米 -->
+        <param name="circle_radius" value="3.0"/>         <!-- 圆圈半径：5米 -->
+        <param name="flight_speed" value="1"/>          <!-- 飞行速度：0.5m/s -->
+        <param name="waypoint_tolerance" value="0.3"/>    <!-- 航点容差：0.3米 -->
+        <param name="num_waypoints" value="36"/>          <!-- 圆周航点数：36个（每10度一个） -->
         
-        <!-- MAVROS命名空间（如果不在命名空间内就用/mavros） -->
-        <param name="mavros_ns" value="/mavros"/>
+        <!-- 圆心位置（相对于起飞点） -->
+        <param name="circle_center_x" value="3.0"/>       <!-- 圆心在起飞点前方5米 -->
+        <param name="circle_center_y" value="0.0"/>       <!-- 圆心在起飞点正前方 -->
     </node>
     
 </launch>

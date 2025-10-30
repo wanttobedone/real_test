@@ -1,0 +1,96 @@
+<launch>
+    <!-- 圆圈飞行测试 Launch 文件 -->
+    
+    <!-- ========================================
+         Part 1: 启动Gazebo仿真环境
+         ======================================== -->
+    
+    <!-- 仿真世界参数 -->
+    <arg name="world" default="$(find ship_painter)/worlds/ship.world"/>
+    <arg name="gui" default="true"/>
+    <arg name="debug" default="false"/>
+    <arg name="verbose" default="false"/>
+    <arg name="paused" default="false"/>
+  
+    <!-- 无人机参数 -->
+    <arg name="vehicle" default="iris_0"/>
+    <arg name="ID" default="0"/>
+    <arg name="fcu_url" default="udp://:24540@localhost:34580"/>  <!-- 修改为正确端口 -->
+    
+    <!-- 无人机初始位置 -->
+    <arg name="x" default="0"/>
+    <arg name="y" default="0"/>
+    <arg name="z" default="0.1"/>
+    <arg name="R" default="0"/>
+    <arg name="P" default="0"/>
+    <arg name="Y" default="0"/>
+    
+    <!-- 设置环境变量 -->
+    <env name="PX4_SIM_MODEL" value="iris"/>
+    <env name="GAZEBO_MODEL_PATH" value="$(find ship_painter)/models:$(find mavlink_sitl_gazebo)/models:$(optenv GAZEBO_MODEL_PATH)"/>
+    <env name="GAZEBO_PLUGIN_PATH" value="$(find mavlink_sitl_gazebo)/build:$(optenv GAZEBO_PLUGIN_PATH)"/>
+    
+    <!-- 启动Gazebo -->
+    <include file="$(find gazebo_ros)/launch/empty_world.launch">
+        <arg name="world_name" value="$(arg world)"/>
+        <arg name="gui" value="$(arg gui)"/>
+        <arg name="debug" value="$(arg debug)"/>
+        <arg name="verbose" value="$(arg verbose)"/>
+        <arg name="paused" value="$(arg paused)"/>
+    </include>
+      
+    <!-- 启动PX4 SITL -->
+    <node name="sitl_$(arg ID)" pkg="px4" type="px4" output="screen" 
+          args="$(find px4)/ROMFS/px4fmu_common -s etc/init.d-posix/rcS -i $(arg ID) -w sitl_iris_$(arg ID)">
+    </node>
+    
+    <!-- 启动MAVROS - 延迟启动等待PX4就绪 -->
+    <node pkg="mavros" type="mavros_node" name="mavros" required="false" clear_params="true" output="screen"
+          launch-prefix="bash -c 'sleep 5; $0 $@'">
+        <param name="fcu_url" value="$(arg fcu_url)"/>
+        <param name="gcs_url" value=""/>
+        <param name="target_system_id" value="1"/>
+        <param name="target_component_id" value="1"/>
+        <param name="fcu_protocol" value="v2.0"/>
+        
+        <!-- 加载插件列表 -->
+        <rosparam command="load" file="$(find mavros)/launch/px4_pluginlists.yaml"/>
+        <rosparam command="load" file="$(find mavros)/launch/px4_config.yaml"/>
+    </node>
+    
+    <!-- 无人机模型加载 -->  
+    <node name="$(arg vehicle)_spawn" pkg="gazebo_ros" type="spawn_model" output="screen"
+          args="-sdf -file $(find mavlink_sitl_gazebo)/models/iris/iris.sdf 
+                -model $(arg vehicle) 
+                -x $(arg x) 
+                -y $(arg y) 
+                -z $(arg z) 
+                -R $(arg R) 
+                -P $(arg P) 
+                -Y $(arg Y)">
+    </node>
+    
+    <!-- 圆圈飞行测试节点 -->
+
+    <node name="circle" pkg="real_test" type="circle_node" output="screen"
+        launch-prefix="bash -c 'sleep 10; $0 $@'">
+        <!-- 飞行参数 -->
+        <param name="takeoff_height" value="5.0"/>        <!-- 起飞高度：5米 -->
+        <param name="circle_radius" value="5.0"/>         <!-- 圆圈半径：5米 -->
+        <param name="flight_speed" value="0.5"/>          <!-- 飞行速度：0.5m/s -->
+        <param name="waypoint_tolerance" value="0.3"/>    <!-- 航点容差：0.3米 -->
+        <param name="num_waypoints" value="36"/>          <!-- 圆周航点数：36个（每10度一个） -->
+        
+        <!-- 圆心位置（相对于起飞点） -->
+        <param name="circle_center_x" value="5.0"/>       <!-- 圆心在起飞点前方5米 -->
+        <param name="circle_center_y" value="0.0"/>       <!-- 圆心在起飞点正前方 -->
+    </node>
+    
+    <!-- 可选：启动 RViz 可视化 -->
+    <!-- <node name="rviz" pkg="rviz" type="rviz" args="-d $(find ship_painter)/rviz/circle_flight.rviz"/> -->
+    
+    <!-- TF变换：world到map（如果需要） -->
+    <node pkg="tf" type="static_transform_publisher" name="world_to_map" 
+          args="0 0 0 0 0 0 world map 100"/>
+    
+</launch>

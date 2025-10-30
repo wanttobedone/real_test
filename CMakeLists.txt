@@ -41,10 +41,25 @@ add_executable(test_node1
   src/test_node1.cpp
 )
 
+add_executable(circle_node 
+  src/circle_node.cpp
+)
+
 target_link_libraries(test_node1
   ${catkin_LIBRARIES}
 )
 
+set_target_properties(circle_node PROPERTIES
+    CXX_STANDARD 17
+    CXX_STANDARD_REQUIRED ON
+    CXX_EXTENSIONS OFF
+)
+target_compile_options(circle_node PRIVATE -fPIC -O3)
+
+# 链接库
+target_link_libraries(circle_node
+  ${catkin_LIBRARIES}
+)
 ## 安装规则
 install(TARGETS test_node1
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
@@ -53,4 +68,10 @@ install(TARGETS test_node1
 install(DIRECTORY launch/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
   FILES_MATCHING PATTERN "*.launch"
+)
+
+install(TARGETS circle_node
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
